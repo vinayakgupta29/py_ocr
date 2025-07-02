@@ -5,6 +5,7 @@ import pytesseract
 from pdf2image import convert_from_path
 import argparse
 import sys
+import time
 import os, subprocess, platform
 from pathlib import Path
 from langdetect import detect, DetectorFactory
@@ -13,6 +14,7 @@ import json
 import logging
 
 BASE = Path(getattr(sys, "_MEIPASS",Path(__file__).parent))
+out_path="@__INVALID__@"
 def _get_exe_dir() -> Path:
     """
     Works both when you run the .py and when the app r̥r̥is frozen
@@ -36,7 +38,7 @@ logging.basicConfig(
     ]
 )
 
-poppler_path = str(BASE / "lib" / "poppler" / "bin")
+POPPLER_PATH_BIN = str(BASE / "lib" / "poppler" / "bin")
 DetectorFactory.seed = 0  # for consistent language detection
 def _log_unhandled_exception(exc_type, exc_value, exc_tb):
     """
@@ -134,7 +136,7 @@ def preprocess_large_text(img: Image.Image) -> np.ndarray:
 
 
 def ocr_pdf(pdf_path: str) -> str:
-    images = convert_from_path(pdf_path, dpi=300, poppler_path=poppler_path)
+    images = convert_from_path(pdf_path, dpi=300, poppler_path=POPPLER_PATH_BIN)
     full_text = []
     
     for img in images:
@@ -166,27 +168,51 @@ def ocr_pdf(pdf_path: str) -> str:
 #         final_text += f"\n--- Page {i+1} ---\n{t}"
   
 #     return final_text
+def showLoadingBar():
+    spinner = "|/-\\"
+    idx = 0
+    while not out_path == "@__INVALID__@":
+        sys.stdout.write(f'\rProcessing... {spinner[idx % len(spinner)]}')
+        sys.stdout.flush()
+        idx += 1
+        time.sleep(0.1)
+    sys.stdout.write('\rProcessing... done!     \n')
+
+
 
 def get_downloads_path():
     """Return the user's Downloads folder on Windows"""
     return str(Path.home() / "Downloads")
 
 def main():
-    print("""
-OCR tool for image or PDF input
+    print(r"""
+    !Welcome to the SarasOCR! 👋
+    OCR tool for image or PDF input 📃
 
-This tool extracts text from images or PDF files using OCR (Optical Character Recognition).
-It supports English and Hindi languages, and can save the recognized text to a file.
+    This tool extracts text from images or PDF files using OCR (Optical Character Recognition).
+    It supports English and Hindi languages, and can save the recognized text to a file.
 
-Usage:
-  - Enter the path to the image or PDF file when prompted.
-  - Enter the mode (leave blank for default (saving the output in the Downloads folder with the same name as the input file), or type 'o' or 'O to save in that path).
-  - Enter the path to the output file ( .txt file ).
+How it works:
+1. You will be asked to enter the path to the input file (image or PDF).
+2. Next, you will choose the output mode:
+    - default : Save the OCR output as a .txt file in your Downloads folder.
+    - output(o/O)  : Save the OCR output to a file path you specify.
+    - print(p/P)   : Display the OCR output directly on the screen (no file saved).
+3. If you choose 'output' mode, you will be prompted to enter the full path for the output text file.
+4. Then, the OCR process will start and output will be saved or displayed accordingly.
 
 Example:
   file: C:/path/to/file.pdf
-  mode: download
+  mode: O
   output: C:/path/to/output.txt
+          
+
+          
+Notes:
+- For file paths on Windows, use backslashes ( \ ), or double backslashes ( \\ ) if needed.
+- If your path contains spaces, enclose it in quotes (e.g. "C:\Users\Your Name\Documents\file.txt").
+
+Let's get started!
 """)
     proceed = input("Do you want to continue? [Y/n]: ").strip().lower()
     if proceed not in ('', 'y', 'yes'):
@@ -202,21 +228,30 @@ Example:
     #args = parser.parse_args()
 
     file = input("Enter the path to the file: ").strip().strip('"').strip("'")
-    print(file)
-    mode = input("Enter the mode (default or OUTPUT FILE): ")
-    if mode == "o" or mode == "O":
+    while not os.path.exists(file):
+        print("Error: File does not exist.")
+        file = input("Enter the path to the file: ").strip().strip('"').strip("'")
+
+    print("\nChoose output mode:")
+    print("  1. default (save to Downloads folder)")
+    print("  2. output  (save to a file path you specify)")
+    print("  3. print   (display output on screen)")
+    mode = input("Enter 1, 2, or 3: ").strip()
+
+    mode_map = {"1": "default", "2": "output", "3": "print"}
+
+    if mode == '1':
+        output = get_downloads_path() + "/" + Path(file).stem + ".txt"
+    elif mode=='2':
         output = input("Enter the path to the output file: ")
         if output and not output.lower().endswith('.txt'):
             output += '.txt'
     else:
-        output = get_downloads_path() + "/" + Path(file).stem + ".txt"
-
-    if not os.path.exists(file):
-        print(os.path.exists(file))
-        print("Error: File does not exist.")
-        return
+       output = None
 
     print(f"Processing file: {file}")
+
+    showLoadingBar()
 
     if file.lower().endswith(".pdf"):
         text = ocr_pdf(file)
@@ -225,10 +260,6 @@ Example:
 
     if output:
         out_path = output
-    elif mode == "download":
-        downloads_dir = get_downloads_path()
-        base_name = Path(file).stem
-        out_path = os.path.join(downloads_dir, f"{base_name}.txt")
     else:
         out_path = None
 
@@ -243,7 +274,7 @@ Example:
 if __name__ == "__main__":
     try:
         tesseract_init()
-        print(poppler_path)
+        print(POPPLER_PATH_BIN)
         main()
     except Exception as e:
         logging.exception("Fatal error inside main()")

@@ -21,3 +21,7 @@ echo "✅ Virtual environment created successfully."
 echo ""
 echo "➡️ To activate it, run:"
 echo "source \"$VENV_DIR/bin/activate\""
+source "venv/bin/activate"
+
+echo ""
+echo "🚀 Virtual Env complete!"
