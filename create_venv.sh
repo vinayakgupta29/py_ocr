@@ -7,7 +7,7 @@ set -e
 PROJECT_DIR=$(pwd)
 
 # Define the venv path
-VENV_DIR="$PROJECT_DIR/venv"
+VENV_DIR="$PROJECT_DIR/.venv"
 
 echo "📁 Project directory: $PROJECT_DIR"
 echo "📦 Creating Python virtual environment in: $VENV_DIR"
@@ -21,7 +21,7 @@ echo "✅ Virtual environment created successfully."
 echo ""
 echo "➡️ To activate it, run:"
 echo "source \"$VENV_DIR/bin/activate\""
-source "venv/bin/activate"
+source "$VENV_DIR/bin/activate"
 
 echo ""
 echo "🚀 Virtual Env complete!"
