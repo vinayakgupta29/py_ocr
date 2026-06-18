@@ -114,7 +114,7 @@ def ocr_image(image_path):
 
     custom_config = f'--oem 3 --psm 6 -c preserve_interword_spaces=1' #-c tessedit_char_whitelist="{whitelist}"'
     
-    text = pytesseract.image_to_string(processed, config=custom_config, lang='eng+hin')
+    text = pytesseract.image_to_string(processed, config=custom_config, lang='hin')
     return text
 
 def preprocess_large_text(img: Image.Image) -> np.ndarray:
